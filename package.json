@@ -18,7 +18,11 @@
     "styled-components": "^6.1.0",
     "mathjs": "^11.11.0",
     "framer-motion": "^10.16.0",
-    "react-icons": "^4.11.0"
+    "react-icons": "^4.11.0",
+    "sql.js": "^1.8.0",
+    "react-slider": "^2.0.6",
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^2.30.0"
   },
   "browserslist": {
     "production": [

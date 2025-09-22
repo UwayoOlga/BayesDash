@@ -1,13 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { BayesianCalculator } from '../utils/bayesianCalculator';
+import { dbService } from '../services/databaseService';
+import { dataSimulation } from '../services/dataSimulationService';
 import { ABTestInput, SequentialTestInput } from './InputComponents';
+import { InteractivePriorSelection } from './InteractivePriorSelection';
+import { DynamicSampleSizeCalculator } from './DynamicSampleSizeCalculator';
+import { StatisticalImagesGallery } from './StatisticalImagesGallery';
+import { DynamicTestScenarioGenerator } from './DynamicTestScenarioGenerator';
 import {
   PosteriorDistributionChart,
   CredibleIntervalChart,
   MonteCarloChart,
   ProbabilityGaugeChart
 } from './Charts';
+import toast, { Toaster } from 'react-hot-toast';
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -220,6 +227,50 @@ export const BayesianABDashboard = () => {
   const [testData, setTestData] = useState(null);
   const [sequentialData, setSequentialData] = useState({ variantA: [], variantB: [] });
   const [calculator] = useState(() => new BayesianCalculator());
+  const [isDbInitialized, setIsDbInitialized] = useState(false);
+  const [currentPrior, setCurrentPrior] = useState({ alpha: 1, beta: 1 });
+  const [sampleSizeData, setSampleSizeData] = useState(null);
+  const [selectedScenario, setSelectedScenario] = useState(null);
+  const [generatedData, setGeneratedData] = useState(null);
+
+  // Initialize database on component mount
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        await dbService.initialize();
+        setIsDbInitialized(true);
+        toast.success('Database initialized successfully!');
+      } catch (error) {
+        console.error('Database initialization failed:', error);
+        toast.error('Database initialization failed, using fallback mode');
+        setIsDbInitialized(true); // Still allow the app to work
+      }
+    };
+    
+    initializeDatabase();
+  }, []);
+
+  // Handle generated data from scenario generator
+  useEffect(() => {
+    if (generatedData) {
+      // Auto-populate the test data with generated scenario data
+      const newTestData = {
+        variantA: {
+          successes: generatedData.variantA.successes,
+          trials: generatedData.variantA.trials,
+          posterior: calculator.calculatePosterior(generatedData.variantA.successes, generatedData.variantA.trials)
+        },
+        variantB: {
+          successes: generatedData.variantB.successes,
+          trials: generatedData.variantB.trials,
+          posterior: calculator.calculatePosterior(generatedData.variantB.successes, generatedData.variantB.trials)
+        },
+        prior: currentPrior
+      };
+      setTestData(newTestData);
+      toast.success(`Generated data for ${generatedData.scenario} scenario!`);
+    }
+  }, [generatedData, calculator, currentPrior]);
 
   const results = useMemo(() => {
     if (!testData) return null;
@@ -311,10 +362,28 @@ export const BayesianABDashboard = () => {
             Basic Analysis
           </Tab>
           <Tab 
+            active={activeTab === 'scenarios'} 
+            onClick={() => setActiveTab('scenarios')}
+          >
+            Test Scenarios
+          </Tab>
+          <Tab 
+            active={activeTab === 'calculator'} 
+            onClick={() => setActiveTab('calculator')}
+          >
+            Sample Calculator
+          </Tab>
+          <Tab 
             active={activeTab === 'sequential'} 
             onClick={() => setActiveTab('sequential')}
           >
             Sequential Testing
+          </Tab>
+          <Tab 
+            active={activeTab === 'gallery'} 
+            onClick={() => setActiveTab('gallery')}
+          >
+            Resources
           </Tab>
           <Tab 
             active={activeTab === 'advanced'} 
@@ -326,6 +395,10 @@ export const BayesianABDashboard = () => {
 
         {activeTab === 'basic' && (
           <>
+            <InteractivePriorSelection 
+              onPriorChange={setCurrentPrior} 
+              calculator={calculator} 
+            />
             <ABTestInput onDataChange={setTestData} calculator={calculator} />
             
             {results && (
@@ -459,6 +532,23 @@ export const BayesianABDashboard = () => {
           </>
         )}
 
+        {activeTab === 'scenarios' && (
+          <DynamicTestScenarioGenerator 
+            onScenarioSelect={setSelectedScenario}
+            onDataGenerated={setGeneratedData}
+          />
+        )}
+
+        {activeTab === 'calculator' && (
+          <DynamicSampleSizeCalculator 
+            onSampleSizeChange={setSampleSizeData}
+          />
+        )}
+
+        {activeTab === 'gallery' && (
+          <StatisticalImagesGallery />
+        )}
+
         {activeTab === 'sequential' && (
           <>
             <SequentialTestInput onSequentialDataChange={setSequentialData} />
@@ -550,6 +640,16 @@ export const BayesianABDashboard = () => {
           </ResultsContainer>
         )}
       </ContentContainer>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
     </DashboardContainer>
   );
 };
