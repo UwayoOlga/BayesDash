@@ -158,6 +158,56 @@ const StatLabel = styled.div`
   margin-top: 4px;
 `;
 
+const ModalBackdrop = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled(motion.div)`
+  background: white;
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 900px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+
+const ModalHeader = styled.div`
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+`;
+
+const ModalTitle = styled.div`
+  font-weight: 700;
+  color: #111827;
+`;
+
+const ModalBody = styled.div`
+  padding: 0;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ModalImg = styled.img`
+  max-width: 100%;
+  max-height: 80vh;
+`;
+
 /**
  * Statistical Images Gallery Component
  * Displays relevant statistical concepts with dynamic content
@@ -166,6 +216,7 @@ export const StatisticalImagesGallery = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isAutoPlay, setIsAutoPlay] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [modalImage, setModalImage] = useState(null);
 
   const imageCategories = {
     all: { name: 'All Images', color: '#667eea' },
@@ -273,13 +324,16 @@ export const StatisticalImagesGallery = () => {
   }, [isAutoPlay, filteredImages.length]);
 
   const handleImageClick = (image) => {
-    // In a real implementation, this would open a modal or navigate to the full image
-    console.log('Opening image:', image.title);
+    setModalImage(image);
   };
 
   const downloadImage = (image) => {
-    // In a real implementation, this would trigger a download
-    console.log('Downloading image:', image.title);
+    const link = document.createElement('a');
+    link.href = image.imageUrl;
+    link.download = `${image.title.replace(/\s+/g, '_')}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -378,6 +432,42 @@ export const StatisticalImagesGallery = () => {
           </StatItem>
         </StatsGrid>
       </StatsContainer>
+
+      {modalImage && (
+        <ModalBackdrop onClick={() => setModalImage(null)}>
+          <ModalContent
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <ModalHeader>
+              <ModalTitle>{modalImage.title}</ModalTitle>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <ControlButton
+                  color={modalImage.color}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadImage(modalImage);
+                  }}
+                >
+                  <FiDownload /> Download
+                </ControlButton>
+                <ControlButton
+                  color="#ef4444"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setModalImage(null);
+                  }}
+                >
+                  Close
+                </ControlButton>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <ModalImg src={modalImage.imageUrl} alt={modalImage.title} />
+            </ModalBody>
+          </ModalContent>
+        </ModalBackdrop>
+      )}
     </ImageGalleryContainer>
   );
 };

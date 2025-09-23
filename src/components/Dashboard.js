@@ -60,6 +60,7 @@ const TabContainer = styled.div`
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 8px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 `;
 
@@ -82,6 +83,7 @@ const Tab = styled.button`
 
 const ResultsContainer = styled.div`
   background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 32px;

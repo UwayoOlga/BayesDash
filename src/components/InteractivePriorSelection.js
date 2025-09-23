@@ -212,9 +212,16 @@ export const InteractivePriorSelection = ({ onPriorChange, calculator }) => {
     const prior = showCustom ? 
       { alpha: customAlpha, beta: customBeta } : 
       priorPresets[selectedPrior];
-    
+
+    // propagate to parent
     onPriorChange(prior);
-  }, [selectedPrior, customAlpha, customBeta, showCustom, onPriorChange]);
+
+    // also sync the shared calculator so downstream computations use this prior
+    if (calculator) {
+      calculator.alpha = prior.alpha;
+      calculator.beta = prior.beta;
+    }
+  }, [selectedPrior, customAlpha, customBeta, showCustom, onPriorChange, calculator]);
 
   const handlePriorSelect = (priorKey) => {
     setSelectedPrior(priorKey);

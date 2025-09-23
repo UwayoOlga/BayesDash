@@ -1,4 +1,4 @@
-import { evaluate } from 'mathjs';
+// mathjs import removed as it was unused
 
 /**
  * Advanced Bayesian A/B Testing Calculator
@@ -25,19 +25,7 @@ export class BayesianCalculator {
     this.monteCarloSamples = 10000;
   }
 
-  /**
-   * Calculate posterior parameters for a variant
-   * @param {number} successes - Number of successful conversions
-   * @param {number} trials - Total number of trials
-   * @returns {Object} Posterior parameters {alpha, beta}
-   */
-  calculatePosterior(successes, trials) {
-    const failures = trials - successes;
-    return {
-      alpha: this.alpha + successes,
-      beta: this.beta + failures
-    };
-  }
+  // calculatePosterior without explicit prior parameters removed to avoid duplication
 
   /**
    * Calculate probability density function for Beta distribution
