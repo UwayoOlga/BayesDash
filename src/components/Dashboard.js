@@ -67,8 +67,8 @@ const TabContainer = styled.div`
 const Tab = styled.button`
   padding: 12px 24px;
   border: none;
-  background: ${props => props.active ? 'white' : 'transparent'};
-  color: ${props => props.active ? '#667eea' : 'white'};
+  background: ${props => props.$active ? 'white' : 'transparent'};
+  color: ${props => props.$active ? '#667eea' : 'white'};
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
@@ -77,7 +77,7 @@ const Tab = styled.button`
   margin: 0 4px;
   
   &:hover {
-    background: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.2)'};
+    background: ${props => props.$active ? 'white' : 'rgba(255, 255, 255, 0.2)'};
   }
 `;
 
@@ -358,37 +358,37 @@ export const BayesianABDashboard = () => {
       <ContentContainer>
         <TabContainer>
           <Tab 
-            active={activeTab === 'basic'} 
+            $active={activeTab === 'basic'} 
             onClick={() => setActiveTab('basic')}
           >
             Basic Analysis
           </Tab>
           <Tab 
-            active={activeTab === 'scenarios'} 
+            $active={activeTab === 'scenarios'} 
             onClick={() => setActiveTab('scenarios')}
           >
             Test Scenarios
           </Tab>
           <Tab 
-            active={activeTab === 'calculator'} 
+            $active={activeTab === 'calculator'} 
             onClick={() => setActiveTab('calculator')}
           >
             Sample Calculator
           </Tab>
           <Tab 
-            active={activeTab === 'sequential'} 
+            $active={activeTab === 'sequential'} 
             onClick={() => setActiveTab('sequential')}
           >
             Sequential Testing
           </Tab>
           <Tab 
-            active={activeTab === 'gallery'} 
+            $active={activeTab === 'gallery'} 
             onClick={() => setActiveTab('gallery')}
           >
             Resources
           </Tab>
           <Tab 
-            active={activeTab === 'advanced'} 
+            $active={activeTab === 'advanced'} 
             onClick={() => setActiveTab('advanced')}
           >
             Advanced Analytics

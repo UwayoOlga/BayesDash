@@ -105,8 +105,8 @@ const ControlPanel = styled.div`
 const ControlButton = styled.button`
   padding: 8px 16px;
   border: 2px solid ${props => props.color || '#667eea'};
-  background: ${props => props.active ? props.color || '#667eea' : 'transparent'};
-  color: ${props => props.active ? 'white' : props.color || '#667eea'};
+  background: ${props => props.$active ? props.color || '#667eea' : 'transparent'};
+  color: ${props => props.$active ? 'white' : props.color || '#667eea'};
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -239,12 +239,12 @@ export const StatisticalImagesGallery = () => {
     },
     {
       id: 2,
-      title: 'Bayesian vs Frequentist',
-      description: 'Comparison of Bayesian and frequentist approaches to statistical inference',
+      title: 'Bayes Theorem (Tree Diagram)',
+      description: 'Illustration of Bayes theorem with a medical testing example',
       category: 'bayesian',
       color: '#10b981',
-      imageUrl: 'https://miro.medium.com/max/1400/1*QJZ6W-Pck_W7RlIDwUIN9Q.jpeg',
-      source: 'Medium - Bayesian Statistics',
+      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bayes%27_Theorem_Medical_Test.svg',
+      source: 'Wikipedia - Bayes Theorem',
       relevance: 'Fundamental concept explanation'
     },
     {
@@ -263,7 +263,7 @@ export const StatisticalImagesGallery = () => {
       description: 'Illustration of Monte Carlo methods for statistical sampling',
       category: 'bayesian',
       color: '#8b5cf6',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Monte_Carlo_Integration_Example.svg/800px-Monte_Carlo_Integration_Example.svg.png',
+      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Monte_Carlo_Integration_Example.svg',
       source: 'Wikipedia - Monte Carlo Method',
       relevance: 'Used in our probability calculations'
     },
@@ -283,7 +283,7 @@ export const StatisticalImagesGallery = () => {
       description: 'Bayesian credible intervals vs frequentist confidence intervals',
       category: 'bayesian',
       color: '#06b6d4',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Bayesian_vs_frequentist_confidence_intervals.svg/800px-Bayesian_vs_frequentist_confidence_intervals.svg.png',
+      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bayesian_vs_frequentist_confidence_intervals.svg',
       source: 'Wikipedia - Credible Interval',
       relevance: 'Key Bayesian concept'
     },
@@ -327,13 +327,30 @@ export const StatisticalImagesGallery = () => {
     setModalImage(image);
   };
 
-  const downloadImage = (image) => {
-    const link = document.createElement('a');
-    link.href = image.imageUrl;
-    link.download = `${image.title.replace(/\s+/g, '_')}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadImage = async (image) => {
+    const filename = `${image.title.replace(/\s+/g, '_')}.png`;
+    try {
+      const url = new URL(image.imageUrl);
+      const allowFetchHosts = ['upload.wikimedia.org'];
+      if (!allowFetchHosts.includes(url.hostname)) {
+        window.open(image.imageUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      const res = await fetch(image.imageUrl, { mode: 'cors' });
+      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      window.open(image.imageUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -351,7 +368,7 @@ export const StatisticalImagesGallery = () => {
           <ControlButton
             key={key}
             color={category.color}
-            active={selectedCategory === key}
+            $active={selectedCategory === key}
             onClick={() => setSelectedCategory(key)}
           >
             {category.name}
@@ -360,7 +377,7 @@ export const StatisticalImagesGallery = () => {
         
         <ControlButton
           color="#10b981"
-          active={isAutoPlay}
+          $active={isAutoPlay}
           onClick={() => setIsAutoPlay(!isAutoPlay)}
         >
           {isAutoPlay ? <FiPause /> : <FiPlay />}

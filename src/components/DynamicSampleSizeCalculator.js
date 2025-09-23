@@ -179,15 +179,41 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
   const [maxDuration, setMaxDuration] = useState(30);
 
   const [results, setResults] = useState(null);
+  const [hasUserEdited, setHasUserEdited] = useState(false);
 
   useEffect(() => {
-    calculateSampleSize();
-  }, [baselineRate, expectedLift, power, alpha, dailyTraffic, maxDuration]);
+    if (hasUserEdited) {
+      calculateSampleSize();
+    }
+  }, [baselineRate, expectedLift, power, alpha, dailyTraffic, maxDuration, hasUserEdited]);
+
+  const inverseNormalCDF = (p) => {
+    const a = [0, -3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.383577518672690e2, -3.066479806614716e1, 2.506628277459239];
+    const b = [0, -5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+    const c = [0, -7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const d = [0, 7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+    const p_low = 0.02425;
+    const p_high = 1 - p_low;
+    if (p < p_low) {
+      const q = Math.sqrt(-2 * Math.log(p));
+      return (((((c[1] * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) * q + c[6]) /
+             ((((d[1] * q + d[2]) * q + d[3]) * q + d[4]) * q + 1);
+    } else if (p <= p_high) {
+      const q = p - 0.5;
+      const r = q * q;
+      return (((((a[1] * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * r + a[6]) * q /
+             (((((b[1] * r + b[2]) * r + b[3]) * r + b[4]) * r + b[5]) * r + 1);
+    } else {
+      const q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c[1] * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) * q + c[6]) /
+               ((((d[1] * q + d[2]) * q + d[3]) * q + d[4]) * q + 1);
+    }
+  };
 
   const calculateSampleSize = () => {
-    // Power analysis for binomial proportions
-    const zAlpha = 1.96; // 95% confidence
-    const zBeta = 0.84; // 80% power
+    // Power analysis for binomial proportions (two-sided alpha)
+    const zAlpha = inverseNormalCDF(1 - alpha / 2);
+    const zBeta = inverseNormalCDF(power);
     
     const p1 = baselineRate;
     const p2 = baselineRate * (1 + expectedLift);
@@ -265,7 +291,7 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
             max="0.99"
             step="0.01"
             value={baselineRate}
-            onChange={(e) => setBaselineRate(parseFloat(e.target.value))}
+            onChange={(e) => { setBaselineRate(parseFloat(e.target.value)); setHasUserEdited(true); }}
             color="#6366f1"
           />
           <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
@@ -284,7 +310,7 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
             max="2.0"
             step="0.01"
             value={expectedLift}
-            onChange={(e) => setExpectedLift(parseFloat(e.target.value))}
+            onChange={(e) => { setExpectedLift(parseFloat(e.target.value)); setHasUserEdited(true); }}
             color="#ec4899"
           />
           <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
@@ -303,7 +329,7 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
             max="100000"
             step="100"
             value={dailyTraffic}
-            onChange={(e) => setDailyTraffic(parseInt(e.target.value))}
+            onChange={(e) => { setDailyTraffic(parseInt(e.target.value)); setHasUserEdited(true); }}
             color="#10b981"
           />
           <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
@@ -322,7 +348,7 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
             max="365"
             step="1"
             value={maxDuration}
-            onChange={(e) => setMaxDuration(parseInt(e.target.value))}
+            onChange={(e) => { setMaxDuration(parseInt(e.target.value)); setHasUserEdited(true); }}
             color="#f59e0b"
           />
           <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
@@ -331,7 +357,7 @@ export const DynamicSampleSizeCalculator = ({ onSampleSizeChange }) => {
         </InputGroup>
       </InputGrid>
 
-      {results && (
+      {hasUserEdited && results && (
         <>
           <ResultsGrid>
             <ResultCard color="#6366f1" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

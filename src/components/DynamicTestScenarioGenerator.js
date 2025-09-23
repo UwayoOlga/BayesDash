@@ -107,8 +107,8 @@ const ControlPanel = styled.div`
 const ControlButton = styled.button`
   padding: 12px 20px;
   border: 2px solid ${props => props.color || '#667eea'};
-  background: ${props => props.active ? props.color || '#667eea' : 'transparent'};
-  color: ${props => props.active ? 'white' : props.color || '#667eea'};
+  background: ${props => props.$active ? props.color || '#667eea' : 'transparent'};
+  color: ${props => props.$active ? 'white' : props.color || '#667eea'};
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
