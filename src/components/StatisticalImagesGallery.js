@@ -5,6 +5,7 @@ import { FiImage, FiDownload, FiRefreshCw, FiPlay, FiPause } from 'react-icons/f
 
 const ImageGalleryContainer = styled.div`
   background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 24px;
@@ -61,6 +62,12 @@ const ImageContainer = styled.div`
   margin-bottom: 12px;
   position: relative;
   overflow: hidden;
+`;
+
+const Thumb = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 const ImagePlaceholder = styled.div`
@@ -398,13 +405,7 @@ export const StatisticalImagesGallery = () => {
             whileTap={{ scale: 0.98 }}
           >
             <ImageContainer>
-              <ImagePlaceholder>
-                <div style={{ fontSize: '24px', marginBottom: '8px' }}>📊</div>
-                <div>{image.title}</div>
-                <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '4px' }}>
-                  Click to view full image
-                </div>
-              </ImagePlaceholder>
+              <Thumb src={image.imageUrl} alt={image.title} loading="lazy" />
             </ImageContainer>
             
             <ImageTitle>{image.title}</ImageTitle>

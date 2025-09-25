@@ -228,6 +228,7 @@ export const BayesianABDashboard = () => {
   const [activeTab, setActiveTab] = useState('basic');
   const [testData, setTestData] = useState(null);
   const [sequentialData, setSequentialData] = useState({ variantA: [], variantB: [] });
+  const [debouncedSequentialData, setDebouncedSequentialData] = useState({ variantA: [], variantB: [] });
   const [calculator] = useState(() => new BayesianCalculator());
   const [isDbInitialized, setIsDbInitialized] = useState(false);
   const [currentPrior, setCurrentPrior] = useState({ alpha: 1, beta: 1 });
@@ -274,6 +275,14 @@ export const BayesianABDashboard = () => {
     }
   }, [generatedData, calculator, currentPrior]);
 
+  // Debounce sequential data to keep typing snappy
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedSequentialData(sequentialData);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [sequentialData]);
+
   const results = useMemo(() => {
     if (!testData) return null;
 
@@ -307,12 +316,17 @@ export const BayesianABDashboard = () => {
   }, [testData, calculator]);
 
   const sequentialResults = useMemo(() => {
-    if (sequentialData.variantA.length === 0 || sequentialData.variantB.length === 0) {
+    if (debouncedSequentialData.variantA.length === 0 || debouncedSequentialData.variantB.length === 0) {
       return null;
     }
 
-    return calculator.sequentialTest(sequentialData.variantA, sequentialData.variantB, 0.95);
-  }, [sequentialData, calculator]);
+    const originalSamples = calculator.monteCarloSamples;
+    // Use fewer samples for interactivity in sequential typing
+    calculator.monteCarloSamples = Math.min(3000, originalSamples);
+    const result = calculator.sequentialTest(debouncedSequentialData.variantA, debouncedSequentialData.variantB, 0.95);
+    calculator.monteCarloSamples = originalSamples;
+    return result;
+  }, [debouncedSequentialData, calculator]);
 
   const getRecommendation = () => {
     if (!results) return null;
