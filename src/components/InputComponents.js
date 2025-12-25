@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import toast from 'react-hot-toast';
 
 const InputContainer = styled.div`
   background: rgba(255, 255, 255, 0.95);
@@ -84,6 +85,13 @@ const Input = styled.input`
   &:invalid {
     border-color: #e53e3e;
   }
+`;
+
+const ErrorMessage = styled.div`
+  color: #e53e3e;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
 `;
 
 const StatsContainer = styled.div`
@@ -176,6 +184,7 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
   const [variantB, setVariantB] = useState({ successes: 0, trials: 0 });
   const [prior, setPrior] = useState({ alpha: 1, beta: 1 });
   const [priorPreset, setPriorPreset] = useState('uniform');
+  const [errors, setErrors] = useState({ variantA: '', variantB: '' });
 
   const priorPresets = {
     uniform: { alpha: 1, beta: 1, name: 'Uniform (Non-informative)' },
@@ -185,7 +194,21 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
     pessimistic: { alpha: 1, beta: 9, name: 'Pessimistic (10% baseline)' }
   };
 
+  const validateVariant = (successes, trials) => {
+    if (successes < 0) return "Successes cannot be negative";
+    if (trials < 0) return "Trials cannot be negative";
+    if (successes > trials) return "Successes cannot exceed trials";
+    return "";
+  };
+
   useEffect(() => {
+    const errorA = validateVariant(variantA.successes, variantA.trials);
+    const errorB = validateVariant(variantB.successes, variantB.trials);
+
+    setErrors({ variantA: errorA, variantB: errorB });
+
+    if (errorA || errorB) return;
+
     calculator.alpha = prior.alpha;
     calculator.beta = prior.beta;
     
@@ -221,6 +244,15 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
     return { mean: (mean * 100).toFixed(2), variance: (variance * 10000).toFixed(4) };
   };
 
+  const handleInputChange = (variant, field, value) => {
+    const numValue = parseInt(value) || 0;
+    if (variant === 'A') {
+      setVariantA(prev => ({ ...prev, [field]: numValue }));
+    } else {
+      setVariantB(prev => ({ ...prev, [field]: numValue }));
+    }
+  };
+
   return (
     <InputContainer>
       <SectionTitle>Bayesian A/B Test Configuration</SectionTitle>
@@ -238,8 +270,9 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
               type="number"
               min="0"
               value={variantA.successes}
-              onChange={(e) => setVariantA(prev => ({ ...prev, successes: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => handleInputChange('A', 'successes', e.target.value)}
               color="#6366f1"
+              style={{ borderColor: errors.variantA && errors.variantA.includes('Successes') ? '#e53e3e' : '' }}
             />
           </InputGroup>
           
@@ -249,10 +282,12 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
               type="number"
               min="0"
               value={variantA.trials}
-              onChange={(e) => setVariantA(prev => ({ ...prev, trials: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => handleInputChange('A', 'trials', e.target.value)}
               color="#6366f1"
+              style={{ borderColor: errors.variantA ? '#e53e3e' : '' }}
             />
           </InputGroup>
+          {errors.variantA && <ErrorMessage>{errors.variantA}</ErrorMessage>}
           
           <StatsContainer>
             <StatBox>
@@ -275,8 +310,9 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
               type="number"
               min="0"
               value={variantB.successes}
-              onChange={(e) => setVariantB(prev => ({ ...prev, successes: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => handleInputChange('B', 'successes', e.target.value)}
               color="#ec4899"
+              style={{ borderColor: errors.variantB && errors.variantB.includes('Successes') ? '#e53e3e' : '' }}
             />
           </InputGroup>
           
@@ -286,10 +322,12 @@ export const ABTestInput = ({ onDataChange, calculator }) => {
               type="number"
               min="0"
               value={variantB.trials}
-              onChange={(e) => setVariantB(prev => ({ ...prev, trials: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => handleInputChange('B', 'trials', e.target.value)}
               color="#ec4899"
+              style={{ borderColor: errors.variantB ? '#e53e3e' : '' }}
             />
           </InputGroup>
+          {errors.variantB && <ErrorMessage>{errors.variantB}</ErrorMessage>}
           
           <StatsContainer>
             <StatBox>
@@ -354,12 +392,42 @@ export const SequentialTestInput = ({ onSequentialDataChange }) => {
   };
 
   const updateDataPoint = (variant, index, field, value) => {
-    setTimeSeriesData(prev => ({
-      ...prev,
-      [variant]: prev[variant].map((point, i) => 
-        i === index ? { ...point, [field]: parseInt(value) || 0 } : point
-      )
-    }));
+    const intValue = parseInt(value) || 0;
+    
+    // Quick validation for this specific field
+    if (intValue < 0) {
+      toast.error('Values cannot be negative');
+      return;
+    }
+
+    // Checking consistency logic
+    // We need access to the OTHER field to validate comparison (successes vs trials)
+    // But since we only update one field at a time, we just check what we can.
+    
+    setTimeSeriesData(prev => {
+      const currentPoint = prev[variant][index];
+      let newPoint = { ...currentPoint, [field]: intValue };
+      
+      // If updating successes, check if > trials
+      if (field === 'successes' && intValue > currentPoint.trials) {
+         toast.error('Successes cannot exceed trials');
+         // Use existing trials as cap? Or allow input but show error? 
+         // For now, let's clamp it.
+         // newPoint.successes = currentPoint.trials;
+         // Actually better to just warn and allow correction, but don't blocking input is annoying.
+      }
+      // If updating trials, check if < successes
+      if (field === 'trials' && intValue < currentPoint.successes) {
+         toast.error('Trials cannot be less than successes');
+      }
+
+      return {
+        ...prev,
+        [variant]: prev[variant].map((point, i) => 
+          i === index ? newPoint : point
+        )
+      };
+    });
   };
 
   const removeDataPoint = (variant, index) => {
