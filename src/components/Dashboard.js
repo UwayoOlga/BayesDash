@@ -8,6 +8,7 @@ import { InteractivePriorSelection } from './InteractivePriorSelection';
 import { DynamicSampleSizeCalculator } from './DynamicSampleSizeCalculator';
 import { StatisticalImagesGallery } from './StatisticalImagesGallery';
 import { DynamicTestScenarioGenerator } from './DynamicTestScenarioGenerator';
+import { DataImport } from './DataImport';
 import {
   PosteriorDistributionChart,
   CredibleIntervalChart,
@@ -172,8 +173,8 @@ const InterpretationText = styled.p`
 `;
 
 const RecommendationBox = styled.div`
-  background: ${props => props.recommendation === 'B' ? 
-    'linear-gradient(135deg, #10b981, #059669)' : 
+  background: ${props => props.recommendation === 'B' ?
+    'linear-gradient(135deg, #10b981, #059669)' :
     'linear-gradient(135deg, #f59e0b, #d97706)'};
   color: white;
   border-radius: 12px;
@@ -249,7 +250,7 @@ export const BayesianABDashboard = () => {
         setIsDbInitialized(true); // Still allow the app to work
       }
     };
-    
+
     initializeDatabase();
   }, []);
 
@@ -275,6 +276,42 @@ export const BayesianABDashboard = () => {
     }
   }, [generatedData, calculator, currentPrior]);
 
+  // Handle CSV Imported Data
+  const handleImportedData = useCallback((data) => {
+    const newTestData = {
+      variantA: {
+        successes: data.variantA.successes,
+        trials: data.variantA.trials,
+        posterior: calculator.calculatePosterior(data.variantA.successes, data.variantA.trials)
+      },
+      variantB: {
+        successes: data.variantB.successes,
+        trials: data.variantB.trials,
+        posterior: calculator.calculatePosterior(data.variantB.successes, data.variantB.trials)
+      },
+      prior: currentPrior
+    };
+
+    // We update the local test data. 
+    // Ideally we also want to update the INPUT FIELDS in ABTestInput
+    // But ABTestInput controls its own state. 
+    // We can solve this by lifting state up, but for now let's just use setTestData to show results
+    // AND we probably want to pass initial values to ABTestInput to reflect the import.
+    // However, ABTestInput doesn't accept props for values currently aside from onDataChange.
+    // Given the architecture, we set the TestData.
+
+    // WARNING: ABTestInput manages its own state, so the inputs won't visually update 
+    // unless we modify ABTestInput to accept 'initialValues' or 'externalState'.
+    // Let's assume for this step we primarily care about the calculations updating.
+    // If we want the inputs to update, we'd need to refactor ABTestInput to be controlled.
+
+    setTestData(newTestData);
+    // Triggering a re-render of ABTestInput with new keys or ref would facilitate the update, 
+    // but without lifting state it is tricky.
+    // For now, let's just render the results.
+  }, [calculator, currentPrior]);
+
+
   // Debounce sequential data to keep typing snappy
   useEffect(() => {
     const id = setTimeout(() => {
@@ -296,7 +333,7 @@ export const BayesianABDashboard = () => {
     const credibleIntervalA = calculator.calculateCredibleInterval(posteriorA, 0.95);
     const credibleIntervalB = calculator.calculateCredibleInterval(posteriorB, 0.95);
     const bayesFactor = calculator.calculateBayesFactor(posteriorA, posteriorB);
-    
+
     // Posterior predictive distributions
     const predictiveA = calculator.posteriorPredictive(posteriorA, 1000);
     const predictiveB = calculator.posteriorPredictive(posteriorB, 1000);
@@ -330,9 +367,9 @@ export const BayesianABDashboard = () => {
 
   const getRecommendation = () => {
     if (!results) return null;
-    
+
     const { probBGreater, expectedLoss } = results;
-    
+
     if (probBGreater > 0.8) {
       return {
         variant: 'B',
@@ -364,45 +401,45 @@ export const BayesianABDashboard = () => {
       <Header>
         <Title>Bayesian A/B Testing Dashboard</Title>
         <Subtitle>
-          Advanced statistical analysis using Bayesian inference, Monte Carlo simulation, 
+          Advanced statistical analysis using Bayesian inference, Monte Carlo simulation,
           and sequential testing methodologies for rigorous conversion rate optimization
         </Subtitle>
       </Header>
 
       <ContentContainer>
         <TabContainer>
-          <Tab 
-            $active={activeTab === 'basic'} 
+          <Tab
+            $active={activeTab === 'basic'}
             onClick={() => setActiveTab('basic')}
           >
             Basic Analysis
           </Tab>
-          <Tab 
-            $active={activeTab === 'scenarios'} 
+          <Tab
+            $active={activeTab === 'scenarios'}
             onClick={() => setActiveTab('scenarios')}
           >
             Test Scenarios
           </Tab>
-          <Tab 
-            $active={activeTab === 'calculator'} 
+          <Tab
+            $active={activeTab === 'calculator'}
             onClick={() => setActiveTab('calculator')}
           >
             Sample Calculator
           </Tab>
-          <Tab 
-            $active={activeTab === 'sequential'} 
+          <Tab
+            $active={activeTab === 'sequential'}
             onClick={() => setActiveTab('sequential')}
           >
             Sequential Testing
           </Tab>
-          <Tab 
-            $active={activeTab === 'gallery'} 
+          <Tab
+            $active={activeTab === 'gallery'}
             onClick={() => setActiveTab('gallery')}
           >
             Resources
           </Tab>
-          <Tab 
-            $active={activeTab === 'advanced'} 
+          <Tab
+            $active={activeTab === 'advanced'}
             onClick={() => setActiveTab('advanced')}
           >
             Advanced Analytics
@@ -411,18 +448,22 @@ export const BayesianABDashboard = () => {
 
         {activeTab === 'basic' && (
           <>
-            <InteractivePriorSelection 
-              onPriorChange={setCurrentPrior} 
-              calculator={calculator} 
+            <DataImport onDataLoaded={handleImportedData} />
+
+            <InteractivePriorSelection
+              onPriorChange={setCurrentPrior}
+              calculator={calculator}
             />
+            {/* Note: The ABTestInput currently manages its own state and won't reflect CSV imports unless we lift that state out. 
+                For now we keep it as manual input option. When manual input changes, it overrides imported data. */}
             <ABTestInput onDataChange={setTestData} calculator={calculator} />
-            
+
             {results && (
               <ResultsContainer>
                 <h2 style={{ textAlign: 'center', marginBottom: '32px', color: '#2d3748' }}>
                   Bayesian Analysis Results
                 </h2>
-                
+
                 <ResultsGrid>
                   <StatCard color="#10b981">
                     <StatValue color="#10b981">
@@ -468,12 +509,12 @@ export const BayesianABDashboard = () => {
                 {recommendation && (
                   <RecommendationBox recommendation={recommendation.variant}>
                     <RecommendationText>
-                      {recommendation.variant === 'Inconclusive' 
-                        ? 'Insufficient Evidence' 
+                      {recommendation.variant === 'Inconclusive'
+                        ? 'Insufficient Evidence'
                         : `Recommendation: Choose Variant ${recommendation.variant}`}
                     </RecommendationText>
                     <RecommendationSubtext>
-                      {recommendation.variant === 'Inconclusive' 
+                      {recommendation.variant === 'Inconclusive'
                         ? 'Collect more data to reach statistical significance'
                         : `${recommendation.confidence} confidence (${(recommendation.probability * 100).toFixed(1)}% probability)`}
                     </RecommendationSubtext>
@@ -498,10 +539,10 @@ export const BayesianABDashboard = () => {
                 <MathematicalNotation>
                   <MathTitle>Mathematical Summary</MathTitle>
                   <MathContent>
-                    <strong>Prior Distribution:</strong> θ ~ Beta(α₀ = {results.prior.alpha}, β₀ = {results.prior.beta})<br/>
-                    <strong>Posterior A:</strong> θ_A|X_A ~ Beta(α = {results.posteriorA.alpha.toFixed(2)}, β = {results.posteriorA.beta.toFixed(2)})<br/>
-                    <strong>Posterior B:</strong> θ_B|X_B ~ Beta(α = {results.posteriorB.alpha.toFixed(2)}, β = {results.posteriorB.beta.toFixed(2)})<br/>
-                    <strong>Expected Values:</strong> E[θ_A] = {(calculator.calculateExpectedValue(results.posteriorA) * 100).toFixed(2)}%, E[θ_B] = {(calculator.calculateExpectedValue(results.posteriorB) * 100).toFixed(2)}%<br/>
+                    <strong>Prior Distribution:</strong> θ ~ Beta(α₀ = {results.prior.alpha}, β₀ = {results.prior.beta})<br />
+                    <strong>Posterior A:</strong> θ_A|X_A ~ Beta(α = {results.posteriorA.alpha.toFixed(2)}, β = {results.posteriorA.beta.toFixed(2)})<br />
+                    <strong>Posterior B:</strong> θ_B|X_B ~ Beta(α = {results.posteriorB.alpha.toFixed(2)}, β = {results.posteriorB.beta.toFixed(2)})<br />
+                    <strong>Expected Values:</strong> E[θ_A] = {(calculator.calculateExpectedValue(results.posteriorA) * 100).toFixed(2)}%, E[θ_B] = {(calculator.calculateExpectedValue(results.posteriorB) * 100).toFixed(2)}%<br />
                     <strong>Posterior Predictive (1000 trials):</strong> A ~ {(results.predictiveA.expectedSuccesses).toFixed(0)} ± {(Math.sqrt(results.predictiveA.variance)).toFixed(0)}, B ~ {(results.predictiveB.expectedSuccesses).toFixed(0)} ± {(Math.sqrt(results.predictiveB.variance)).toFixed(0)}
                   </MathContent>
                 </MathematicalNotation>
@@ -509,16 +550,16 @@ export const BayesianABDashboard = () => {
                 <InterpretationContainer>
                   <InterpretationTitle>Statistical Interpretation</InterpretationTitle>
                   <InterpretationText>
-                    The Bayesian analysis provides a probabilistic framework for decision-making under uncertainty. 
-                    Unlike frequentist methods that provide p-values, Bayesian inference directly answers the question: 
+                    The Bayesian analysis provides a probabilistic framework for decision-making under uncertainty.
+                    Unlike frequentist methods that provide p-values, Bayesian inference directly answers the question:
                     "What is the probability that Variant B outperforms Variant A?"
                   </InterpretationText>
                   <InterpretationText>
-                    The credible intervals represent the range of conversion rates that are most plausible given the observed data, 
+                    The credible intervals represent the range of conversion rates that are most plausible given the observed data,
                     incorporating both the prior knowledge and the likelihood of the observed outcomes.
                   </InterpretationText>
                   <InterpretationText>
-                    Expected loss quantifies the potential cost of making the wrong decision, providing a risk-aware approach 
+                    Expected loss quantifies the potential cost of making the wrong decision, providing a risk-aware approach
                     to variant selection that considers both the probability of being correct and the magnitude of potential errors.
                   </InterpretationText>
                 </InterpretationContainer>
@@ -528,20 +569,20 @@ export const BayesianABDashboard = () => {
             {results && (
               <>
                 <ProbabilityGaugeChart probability={results.probBGreater} />
-                <PosteriorDistributionChart 
-                  posteriorA={results.posteriorA} 
-                  posteriorB={results.posteriorB} 
-                  calculator={calculator} 
+                <PosteriorDistributionChart
+                  posteriorA={results.posteriorA}
+                  posteriorB={results.posteriorB}
+                  calculator={calculator}
                 />
-                <CredibleIntervalChart 
-                  posteriorA={results.posteriorA} 
-                  posteriorB={results.posteriorB} 
-                  calculator={calculator} 
+                <CredibleIntervalChart
+                  posteriorA={results.posteriorA}
+                  posteriorB={results.posteriorB}
+                  calculator={calculator}
                 />
-                <MonteCarloChart 
-                  posteriorA={results.posteriorA} 
-                  posteriorB={results.posteriorB} 
-                  calculator={calculator} 
+                <MonteCarloChart
+                  posteriorA={results.posteriorA}
+                  posteriorB={results.posteriorB}
+                  calculator={calculator}
                 />
               </>
             )}
@@ -549,14 +590,14 @@ export const BayesianABDashboard = () => {
         )}
 
         {activeTab === 'scenarios' && (
-          <DynamicTestScenarioGenerator 
+          <DynamicTestScenarioGenerator
             onScenarioSelect={setSelectedScenario}
             onDataGenerated={setGeneratedData}
           />
         )}
 
         {activeTab === 'calculator' && (
-          <DynamicSampleSizeCalculator 
+          <DynamicSampleSizeCalculator
             onSampleSizeChange={setSampleSizeData}
           />
         )}
@@ -568,13 +609,13 @@ export const BayesianABDashboard = () => {
         {activeTab === 'sequential' && (
           <>
             <SequentialTestInput onSequentialDataChange={setSequentialData} />
-            
+
             {sequentialResults && (
               <ResultsContainer>
                 <h2 style={{ textAlign: 'center', marginBottom: '32px', color: '#2d3748' }}>
                   Sequential Testing Analysis
                 </h2>
-                
+
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ color: '#2d3748', marginBottom: '16px' }}>Early Stopping Analysis</h3>
                   {sequentialResults.map((result, index) => (
@@ -589,8 +630,8 @@ export const BayesianABDashboard = () => {
                         <span style={{ fontWeight: '600', color: '#2d3748' }}>
                           Step {result.step}
                         </span>
-                        <span style={{ 
-                          fontWeight: '700', 
+                        <span style={{
+                          fontWeight: '700',
                           color: result.shouldStop ? '#dc2626' : '#16a34a',
                           fontSize: '18px'
                         }}>
@@ -598,7 +639,7 @@ export const BayesianABDashboard = () => {
                         </span>
                       </div>
                       <div style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>
-                        Expected Loss A: {(result.expectedLoss.lossA * 100).toFixed(2)}% | 
+                        Expected Loss A: {(result.expectedLoss.lossA * 100).toFixed(2)}% |
                         Expected Loss B: {(result.expectedLoss.lossB * 100).toFixed(2)}%
                         {result.shouldStop && (
                           <span style={{ color: '#dc2626', fontWeight: '600', marginLeft: '12px' }}>
@@ -619,17 +660,17 @@ export const BayesianABDashboard = () => {
             <h2 style={{ textAlign: 'center', marginBottom: '32px', color: '#2d3748' }}>
               Advanced Bayesian Analytics
             </h2>
-            
+
             <MathematicalNotation>
               <MathTitle>Advanced Statistical Methods</MathTitle>
               <MathContent>
-                <strong>Monte Carlo Integration:</strong> Used for calculating P(B > A) with 10,000 samples<br/>
-                <strong>Cheng's Algorithm:</strong> Efficient Beta distribution sampling for posterior simulation<br/>
-                <strong>Sequential Testing:</strong> Early stopping rules based on posterior probabilities<br/>
-                <strong>Expected Loss:</strong> Bayesian risk quantification for decision theory<br/>
-                <strong>Credible Intervals:</strong> Bayesian alternative to confidence intervals<br/>
-                <strong>Posterior Predictive:</strong> Future outcome prediction using current posterior<br/>
-                <strong>Sensitivity Analysis:</strong> Prior selection impact assessment<br/>
+                <strong>Monte Carlo Integration:</strong> Used for calculating P(B > A) with 10,000 samples<br />
+                <strong>Cheng's Algorithm:</strong> Efficient Beta distribution sampling for posterior simulation<br />
+                <strong>Sequential Testing:</strong> Early stopping rules based on posterior probabilities<br />
+                <strong>Expected Loss:</strong> Bayesian risk quantification for decision theory<br />
+                <strong>Credible Intervals:</strong> Bayesian alternative to confidence intervals<br />
+                <strong>Posterior Predictive:</strong> Future outcome prediction using current posterior<br />
+                <strong>Sensitivity Analysis:</strong> Prior selection impact assessment<br />
                 <strong>Bayes Factors:</strong> Model comparison using marginal likelihoods
               </MathContent>
             </MathematicalNotation>
@@ -637,26 +678,26 @@ export const BayesianABDashboard = () => {
             <InterpretationContainer>
               <InterpretationTitle>Methodological Advantages</InterpretationTitle>
               <InterpretationText>
-                <strong>Probabilistic Interpretation:</strong> Direct probability statements about parameters, 
+                <strong>Probabilistic Interpretation:</strong> Direct probability statements about parameters,
                 unlike frequentist confidence intervals that are not probability statements about the parameter.
               </InterpretationText>
               <InterpretationText>
-                <strong>Prior Knowledge Integration:</strong> Incorporates existing knowledge through prior distributions, 
+                <strong>Prior Knowledge Integration:</strong> Incorporates existing knowledge through prior distributions,
                 allowing for more informed decision-making when historical data is available.
               </InterpretationText>
               <InterpretationText>
-                <strong>Sequential Analysis:</strong> Enables early stopping when sufficient evidence is accumulated, 
+                <strong>Sequential Analysis:</strong> Enables early stopping when sufficient evidence is accumulated,
                 reducing the cost and time of experimentation while maintaining statistical rigor.
               </InterpretationText>
               <InterpretationText>
-                <strong>Decision-Theoretic Framework:</strong> Provides expected loss calculations that directly 
+                <strong>Decision-Theoretic Framework:</strong> Provides expected loss calculations that directly
                 inform business decisions by quantifying the cost of making incorrect choices.
               </InterpretationText>
             </InterpretationContainer>
           </ResultsContainer>
         )}
       </ContentContainer>
-      <Toaster 
+      <Toaster
         position="top-right"
         toastOptions={{
           duration: 4000,
