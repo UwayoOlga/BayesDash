@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import Papa from 'papaparse';
 import toast from 'react-hot-toast';
@@ -24,11 +24,11 @@ const Title = styled.h3`
 `;
 
 const DropZone = styled.div`
-  border: 2px dashed ${props => props.isDragActive ? '#667eea' : '#cbd5e0'};
+  border: 2px dashed ${props => props.$isDragActive ? '#667eea' : '#cbd5e0'};
   border-radius: 8px;
   padding: 32px;
   text-align: center;
-  background: ${props => props.isDragActive ? '#ebf4ff' : '#f7fafc'};
+  background: ${props => props.$isDragActive ? '#ebf4ff' : '#f7fafc'};
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -94,29 +94,52 @@ export const DataImport = ({ onDataLoaded }) => {
             skipEmptyLines: true,
             complete: (results) => {
                 try {
-                    // Expected format: variant (A/B), successes, trials
                     const data = results.data;
 
                     if (data.length < 2) {
                         throw new Error('CSV must contain at least 2 rows of data');
                     }
 
-                    // Case insensitive search for rows
-                    const rowA = data.find(row => row.variant?.toLowerCase() === 'a' || row.Variant?.toLowerCase() === 'a');
-                    const rowB = data.find(row => row.variant?.toLowerCase() === 'b' || row.Variant?.toLowerCase() === 'b');
+                    // Helper to fuzzy match column names
+                    const findKey = (row, validNames) => {
+                        const keys = Object.keys(row);
+                        return keys.find(key =>
+                            validNames.some(name => key.trim().toLowerCase() === name)
+                        );
+                    };
+
+                    // Identify column mapping from the first row
+                    const firstRow = data[0];
+                    const variantKey = findKey(firstRow, ['variant', 'group', 'version', 'name']);
+                    const successesKey = findKey(firstRow, ['successes', 'success', 'conversions', 'converted', 'wins']);
+                    const trialsKey = findKey(firstRow, ['trials', 'visitors', 'users', 'participants', 'total']);
+
+                    if (!variantKey || !successesKey || !trialsKey) {
+                        throw new Error(`Could not identify required columns. Found: ${Object.keys(firstRow).join(', ')}. Expected: variant, successes, trials.`);
+                    }
+
+                    // Flexible Variant Finding - look for any reasonable variant identifier
+                    const rowA = data.find(row => {
+                        const val = row[variantKey]?.toString().trim().toLowerCase();
+                        return val === 'a' || val === 'control' || val === 'original';
+                    });
+                    const rowB = data.find(row => {
+                        const val = row[variantKey]?.toString().trim().toLowerCase();
+                        return val === 'b' || val === 'test' || val === 'variant';
+                    });
 
                     if (!rowA || !rowB) {
-                        throw new Error('Could not find rows for variant A and B (check "variant" column)');
+                        throw new Error('Could not find rows for variant A and B. Please ensure your variant column contains "A" and "B" (or "Control" and "Test").');
                     }
 
                     const parsedData = {
                         variantA: {
-                            successes: parseInt(rowA.successes || rowA.Successes),
-                            trials: parseInt(rowA.trials || rowA.Trials)
+                            successes: parseInt(rowA[successesKey]),
+                            trials: parseInt(rowA[trialsKey])
                         },
                         variantB: {
-                            successes: parseInt(rowB.successes || rowB.Successes),
-                            trials: parseInt(rowB.trials || rowB.Trials)
+                            successes: parseInt(rowB[successesKey]),
+                            trials: parseInt(rowB[trialsKey])
                         }
                     };
 
@@ -130,7 +153,7 @@ export const DataImport = ({ onDataLoaded }) => {
                     onDataLoaded(parsedData);
                     toast.success('Stats loaded successfully from CSV!');
                 } catch (error) {
-                    console.error(error);
+                    console.error('CSV Processing Error:', error);
                     toast.error(`Import failed: ${error.message}`);
                     setFileName(null);
                 }
@@ -174,7 +197,7 @@ export const DataImport = ({ onDataLoaded }) => {
 
             <label htmlFor="csv-upload">
                 <DropZone
-                    isDragActive={isDragActive}
+                    $isDragActive={isDragActive}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}

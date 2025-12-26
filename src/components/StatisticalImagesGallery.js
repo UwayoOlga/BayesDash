@@ -240,8 +240,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Visual representation of Beta distributions with different α and β parameters',
       category: 'distributions',
       color: '#6366f1',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Beta_distribution_pdf.svg/800px-Beta_distribution_pdf.svg.png',
-      source: 'Wikipedia - Beta Distribution',
+      imageUrl: '/images/beta_distribution.svg',
+      source: 'Generated SVG',
       relevance: 'Core to Bayesian A/B testing'
     },
     {
@@ -250,8 +250,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Illustration of Bayes theorem with a medical testing example',
       category: 'bayesian',
       color: '#10b981',
-      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bayes%27_Theorem_Medical_Test.svg',
-      source: 'Wikipedia - Bayes Theorem',
+      imageUrl: '/images/bayes_theorem.svg',
+      source: 'Generated SVG',
       relevance: 'Fundamental concept explanation'
     },
     {
@@ -260,8 +260,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Step-by-step visualization of the A/B testing methodology',
       category: 'testing',
       color: '#ec4899',
-      imageUrl: 'https://cdn.optimizely.com/img/134769290/ab-testing-process.png',
-      source: 'Optimizely - A/B Testing Guide',
+      imageUrl: '/images/ab_testing.svg',
+      source: 'Generated SVG',
       relevance: 'Practical implementation guide'
     },
     {
@@ -270,8 +270,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Illustration of Monte Carlo methods for statistical sampling',
       category: 'bayesian',
       color: '#8b5cf6',
-      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Monte_Carlo_Integration_Example.svg',
-      source: 'Wikipedia - Monte Carlo Method',
+      imageUrl: '/images/monte_carlo.svg',
+      source: 'Generated SVG',
       relevance: 'Used in our probability calculations'
     },
     {
@@ -280,8 +280,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Visual guide to understanding statistical power and sample size',
       category: 'testing',
       color: '#f59e0b',
-      imageUrl: 'https://www.statisticshowto.com/wp-content/uploads/2013/09/power-analysis.png',
-      source: 'Statistics How To',
+      imageUrl: '/images/power_analysis.svg',
+      source: 'Generated SVG',
       relevance: 'Essential for test design'
     },
     {
@@ -290,8 +290,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Bayesian credible intervals vs frequentist confidence intervals',
       category: 'bayesian',
       color: '#06b6d4',
-      imageUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Bayesian_vs_frequentist_confidence_intervals.svg',
-      source: 'Wikipedia - Credible Interval',
+      imageUrl: '/images/credible_intervals.svg',
+      source: 'Generated SVG',
       relevance: 'Key Bayesian concept'
     },
     {
@@ -300,8 +300,8 @@ export const StatisticalImagesGallery = () => {
       description: 'Early stopping rules and sequential analysis in A/B testing',
       category: 'testing',
       color: '#ef4444',
-      imageUrl: 'https://cdn.optimizely.com/img/134769290/sequential-testing.png',
-      source: 'Optimizely - Sequential Testing',
+      imageUrl: '/images/sequential_testing.svg',
+      source: 'Generated SVG',
       relevance: 'Advanced testing methodology'
     },
     {
@@ -310,14 +310,14 @@ export const StatisticalImagesGallery = () => {
       description: 'Effective ways to present statistical results and insights',
       category: 'visualization',
       color: '#84cc16',
-      imageUrl: 'https://www.tableau.com/sites/default/files/2021-06/data-visualization-best-practices.png',
-      source: 'Tableau - Data Visualization',
+      imageUrl: '/images/data_visualization.svg',
+      source: 'Generated SVG',
       relevance: 'Improving result presentation'
     }
   ];
 
-  const filteredImages = selectedCategory === 'all' 
-    ? statisticalImages 
+  const filteredImages = selectedCategory === 'all'
+    ? statisticalImages
     : statisticalImages.filter(img => img.category === selectedCategory);
 
   useEffect(() => {
@@ -381,7 +381,7 @@ export const StatisticalImagesGallery = () => {
             {category.name}
           </ControlButton>
         ))}
-        
+
         <ControlButton
           color="#10b981"
           $active={isAutoPlay}
@@ -407,11 +407,11 @@ export const StatisticalImagesGallery = () => {
             <ImageContainer>
               <Thumb src={image.imageUrl} alt={image.title} loading="lazy" />
             </ImageContainer>
-            
+
             <ImageTitle>{image.title}</ImageTitle>
             <ImageDescription>{image.description}</ImageDescription>
             <ImageSource>Source: {image.source}</ImageSource>
-            
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
               <ControlButton
                 color={image.color}

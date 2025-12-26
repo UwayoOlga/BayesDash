@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="800" height="500" fill="#f8fafc"/>
+  <grid x="0" y="0" width="800" height="500" fill="url(#grid)"/>
+  
+  <!-- Axis -->
+  <line x1="50" y1="450" x2="750" y2="450" stroke="#cbd5e0" stroke-width="2"/>
+  <line x1="50" y1="450" x2="50" y2="50" stroke="#cbd5e0" stroke-width="2"/>
+  
+  <!-- Curves -->
+  <path d="M50,450 Q200,50 400,250 T750,450" fill="none" stroke="url(#grad1)" stroke-width="4" filter="url(#glow)"/>
+  <path d="M50,450 Q300,350 750,450" fill="none" stroke="#ec4899" stroke-width="3" stroke-dasharray="5,5" opacity="0.6"/>
+  
+  <!-- Text -->
+  <text x="650" y="80" font-family="sans-serif" font-size="24" fill="#475569" font-weight="bold">Beta(α, β)</text>
+</svg>
